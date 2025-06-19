@@ -3,36 +3,78 @@ import sys
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from config.available_functions import available_functions
+from config.system_prompt import SYSTEM_PROMPT
+from functions.get_file_content import get_file_content
+from functions.get_files_info import get_files_info
+from functions.run_python import run_python_file
+from functions.write_file import write_file
 
-SYSTEM_PROMPT = """
-You are a helpful AI coding agent.
 
-When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+def call_function(function_call_part: types.FunctionCall, verbose=False):
+    if verbose:
+        print(f"Calling function: {function_call_part.name} with arguments {function_call_part.args}")
 
-- List files and directories
+    print(f" - Calling function: {function_call_part.name}")
 
-All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
-"""
-
-schema_get_files_info = types.FunctionDeclaration(
-    name="get_files_info",
-    description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
-    parameters=types.Schema(
-        type=types.Type.OBJECT,
-        properties={
-            "directory": types.Schema(
-                type=types.Type.STRING,
-                description="The directory to list files from, relative to the working directory. If not provided, lists files in the working directory itself.",
-            ),
-        },
-    ),
+    function_name = function_call_part.name
+    function_args = function_call_part.args
+    print(function_args)
+    if function_name == "get_file_content":
+        function_result = get_file_content('./calculator', **function_args)
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"result": function_result}
+                )
+            ]
+        )
+    elif function_name == "get_files_info":
+        function_result = get_files_info('./calculator', **function_args)
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"result": function_result}
+                )
+            ]
+        )
+    elif function_name == "run_python_file":
+        function_result = run_python_file('./calculator',**function_args)
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"result": function_result}
+                )
+            ]
+        )
+    elif function_name == "write_file":
+        function_result = write_file('./calculator',**function_args)
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"result": function_result}
+                )
+            ]
+        )
+    else:
+        return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=function_name,
+                response={"result": function_name},
+            )
+        ],
 )
 
-available_functions = types.Tool(
-    function_declarations=[
-        schema_get_files_info,
-    ]
-)
 
 def generate_content(client, message, debug=False):
     res = client.models.generate_content(
@@ -41,9 +83,19 @@ def generate_content(client, message, debug=False):
         config=types.GenerateContentConfig(tools=[available_functions], system_instruction=SYSTEM_PROMPT),
     )
 
-    print(res.text)
+    
+    if not res.function_calls:
+        print(res.text)
+        return
+    
     for function_call in res.function_calls:
-        print(f"Function call: {function_call.name} with arguments {function_call.args}")
+        function_response = call_function(function_call, verbose=True)
+        
+        if not function_response.parts[0].function_response.response:
+            raise Exception('Function response is empty. Please check the function implementation.')
+        
+        print(f"-> {function_response.parts[0].function_response.response}")
+        
     if debug:
         print("Prompt tokens:", res.usage_metadata.prompt_token_count)
         print("Response tokens:", res.usage_metadata.candidates_token_count)

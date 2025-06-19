@@ -1,4 +1,5 @@
 import os
+from google.genai import types
 
 def write_file(working_dir, file_path, content):
 
@@ -14,3 +15,22 @@ def write_file(working_dir, file_path, content):
         return f'Succesfully wrote to "{file_path}" {len(content)} characters written'
     except Exception as e:
         return f'Error: {str(e)}'
+    
+
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Writes content to a specified file within the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file to write, relative to the working directory.",
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="The content to write to the file.",
+            ),
+        },
+    ),
+)
