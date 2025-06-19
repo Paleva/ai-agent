@@ -1,6 +1,5 @@
 import os
 
-
 def get_files_info(working_dir, directory=None):
 
     absolute_working_dir = os.path.abspath(working_dir)
