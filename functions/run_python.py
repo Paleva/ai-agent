@@ -3,10 +3,10 @@ import subprocess
 from google.genai import types
 
 def run_python_file(working_dir, file_path, args=None):
+    
     absolute_working_dir = os.path.abspath(working_dir)
     absolute_directory = os.path.abspath(os.path.join(absolute_working_dir, file_path or '.'))
-    print(f"Absolute working directory: {absolute_working_dir}")
-    print(f"Absolute directory: {absolute_directory}")
+    
     if not absolute_directory.startswith(absolute_working_dir):
         return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
     

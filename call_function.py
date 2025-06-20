@@ -11,13 +11,16 @@ WORKING_DIR = './calculator'
 def call_function(function_call_part: types.FunctionCall, verbose=False):
     if verbose:
         print(f" - Calling function: {function_call_part.name} with arguments {function_call_part.args}")
-
+    else:
+        print(f" - Calling function: {function_call_part.name}")
+    
     functions = {
         "get_file_content": get_file_content,
         "get_files_info": get_files_info,
         "run_python_file": run_python_file,
         "write_file": write_file,
     }
+
     function_name = function_call_part.name
     if function_name not in functions:
         return types.Content(

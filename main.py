@@ -3,13 +3,8 @@ import sys
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from config.available_functions import available_functions
-from config.system_prompt import SYSTEM_PROMPT
-from functions.get_file_content import get_file_content
-from functions.get_files_info import get_files_info
-from functions.run_python import run_python_file
-from functions.write_file import write_file
 from generate_content import generate_content
+from call_function import call_function
 
 def main():
     load_dotenv()
@@ -18,7 +13,9 @@ def main():
     DEBUG = None
 
     if len(sys.argv) == 1:
-        print("Usage: python main.py <prompt>")
+        print("Usage: python main.py <prompt> [--verbose]")
+        print("Example: python3 main.py 'What is the capital of France?' --verbose")
+        print("Example: python3 main.py 'Run tests.py'")
         sys.exit(1)
 
     if "--verbose" in args:
@@ -32,8 +29,26 @@ def main():
 
     if DEBUG:
         print("User prompt:", prompt)
+    
+    response = None
+    for i in range(20):
+        function = False
+        response = generate_content(client, messages, debug=DEBUG)
+        for candidate in response.candidates:
+            messages.append(candidate.content)
+            for part in candidate.content.parts:
+                if part.function_call:
+                    function = True
+                    function_response = call_function(part.function_call, verbose=DEBUG)
+                    messages.append(function_response)
+                    if DEBUG:
+                        print("Function response:", function_response)
+        if not function:
+            break
 
-    generate_content(client, messages, debug=DEBUG)
+        
+    print("FINAL:", response.text)
+
     
 
 

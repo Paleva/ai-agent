@@ -5,6 +5,7 @@ def get_file_content(working_dir, file_path=None):
 
     absolute_working_dir = os.path.abspath(working_dir)
     absolute_directory = os.path.abspath(os.path.join(absolute_working_dir, file_path or '.'))
+    
     if not absolute_directory.startswith(absolute_working_dir):
         return f'Error: Cannot read "{file_path}" as it is outside the permitted working directory'
     
