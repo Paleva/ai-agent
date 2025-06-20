@@ -30,6 +30,7 @@ def main():
     if DEBUG:
         print("User prompt:", prompt)
     
+
     response = None
     for i in range(20):
         function = False
